@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ad then Google</title>
+  <title>Ad → Google → Ad Loop</title>
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
       background: #f2f2f2;
       display: flex;
-      height: 100vh;
       align-items: center;
       justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
     .box {
       background: white;
@@ -24,6 +24,7 @@
     }
     h1 {
       color: #0088cc;
+      font-size: 20px;
     }
     button {
       background: #0088cc;
@@ -34,9 +35,11 @@
       font-size: 16px;
       cursor: pointer;
       margin-top: 15px;
+      width: 100%;
     }
-    button:hover {
-      background: #0077b5;
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
     #status {
       margin-top: 10px;
@@ -47,65 +50,73 @@
 </head>
 <body>
   <div class="box">
-    <h1>Open Google</h1>
-    <p>First time you'll see an ad, then go to Google next time.</p>
-    <button id="openBtn">Open Google</button>
+    <h1>Ad + Google Loop</h1>
+    <p>Click the button — watch ad, then go to Google.</p>
+    <button id="actionBtn">Show Ad</button>
     <div id="status">Ready</div>
   </div>
 
   <!-- ✅ Monetag Rewarded Interstitial SDK -->
   <script src="//libtl.com/sdk.js" data-zone="10168919" data-sdk="show_10168919"></script>
 
-  <!-- ✅ Telegram SDK (optional, if opened in Telegram) -->
+  <!-- ✅ Telegram SDK (optional for WebApp) -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <script>
-    const btn = document.getElementById("openBtn");
+    const btn = document.getElementById("actionBtn");
     const status = document.getElementById("status");
     const GOOGLE_URL = "https://google.com";
-    const FLAG = "ad_watched_once";
     const tg = window.Telegram?.WebApp;
 
+    // 0 = show ad next | 1 = open google next
+    let nextAction = localStorage.getItem("nextAction") || "ad";
+
     function updateUI() {
-      if (localStorage.getItem(FLAG)) {
-        btn.textContent = "Go to Google";
-        status.textContent = "Ad watched — click to go to Google.";
-      } else {
+      if (nextAction === "ad") {
         btn.textContent = "Show Ad";
-        status.textContent = "Click to watch ad first.";
+        status.textContent = "Next: Watch ad before going to Google.";
+      } else {
+        btn.textContent = "Go to Google";
+        status.textContent = "Next: Visit Google.";
       }
     }
 
     async function handleClick() {
-      const watched = localStorage.getItem(FLAG);
-      if (!watched) {
+      btn.disabled = true; // prevent multiple clicks
+
+      if (nextAction === "ad") {
         status.textContent = "Loading ad...";
         try {
-          // Show rewarded ad
-          await show_10168919();
-          alert("You have seen an ad!");
-          localStorage.setItem(FLAG, "1");
-          updateUI();
+          await show_10168919(); // show ad
+          alert("Ad finished!");
+          nextAction = "google";
+          localStorage.setItem("nextAction", "google");
+          status.textContent = "Ad watched. Now you can go to Google.";
         } catch (err) {
           console.error("Ad error:", err);
-          alert("Ad failed or skipped.");
+          alert("Ad failed to show.");
+        } finally {
+          btn.disabled = false;
+          updateUI();
         }
+
       } else {
         status.textContent = "Opening Google...";
-        // open Google in external browser or Telegram web app
         if (tg && typeof tg.openLink === "function") {
           tg.openLink(GOOGLE_URL);
         } else {
           window.open(GOOGLE_URL, "_blank");
         }
+
+        // After going to Google, next time show ad again
+        nextAction = "ad";
+        localStorage.setItem("nextAction", "ad");
+        btn.disabled = false;
+        updateUI();
       }
     }
 
     btn.addEventListener("click", handleClick);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") updateUI();
-    });
-
     updateUI();
   </script>
 </body>
