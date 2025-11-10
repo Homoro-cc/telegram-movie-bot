@@ -1,123 +1,21 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ad → Google → Ad Loop</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .box {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      text-align: center;
-      width: 320px;
-    }
-    h1 {
-      color: #0088cc;
-      font-size: 20px;
-    }
-    button {
-      background: #0088cc;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 12px 18px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 15px;
-      width: 100%;
-    }
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    #status {
-      margin-top: 10px;
-      color: #666;
-      font-size: 14px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Ad Website</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Ad + Google Loop</h1>
-    <p>Click the button — watch ad, then go to Google.</p>
-    <button id="actionBtn">Show Ad</button>
-    <div id="status">Ready</div>
-  </div>
-
-  <!-- ✅ Monetag Rewarded Interstitial SDK -->
-  <script src="//libtl.com/sdk.js" data-zone="10168919" data-sdk="show_10168919"></script>
-
-  <!-- ✅ Telegram SDK (optional for WebApp) -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <script>
-    const btn = document.getElementById("actionBtn");
-    const status = document.getElementById("status");
-    const GOOGLE_URL = "https://google.com";
-    const tg = window.Telegram?.WebApp;
-
-    // 0 = show ad next | 1 = open google next
-    let nextAction = localStorage.getItem("nextAction") || "ad";
-
-    function updateUI() {
-      if (nextAction === "ad") {
-        btn.textContent = "Show Ad";
-        status.textContent = "Next: Watch ad before going to Google.";
-      } else {
-        btn.textContent = "Go to Google";
-        status.textContent = "Next: Visit Google.";
-      }
-    }
-
-    async function handleClick() {
-      btn.disabled = true; // prevent multiple clicks
-
-      if (nextAction === "ad") {
-        status.textContent = "Loading ad...";
-        try {
-          await show_10168919(); // show ad
-          alert("Ad finished!");
-          nextAction = "google";
-          localStorage.setItem("nextAction", "google");
-          status.textContent = "Ad watched. Now you can go to Google.";
-        } catch (err) {
-          console.error("Ad error:", err);
-          alert("Ad failed to show.");
-        } finally {
-          btn.disabled = false;
-          updateUI();
-        }
-
-      } else {
-        status.textContent = "Opening Google...";
-        if (tg && typeof tg.openLink === "function") {
-          tg.openLink(GOOGLE_URL);
-        } else {
-          window.open(GOOGLE_URL, "_blank");
-        }
-
-        // After going to Google, next time show ad again
-        nextAction = "ad";
-        localStorage.setItem("nextAction", "ad");
-        btn.disabled = false;
-        updateUI();
-      }
-    }
-
-    btn.addEventListener("click", handleClick);
-    updateUI();
-  </script>
+    <header>
+        <h1>Welcome to My Ad Site</h1>
+    </header>
 </body>
 </html>
