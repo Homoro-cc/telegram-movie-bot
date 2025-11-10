@@ -1,32 +1,228 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Telegram Web App</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <!--AD Confifer-->
   <script src='//libtl.com/sdk.js' data-zone='10168919' data-sdk='show_10168919'></script>
+  
+  <title>Telegram Web App — Ad then Google</title>
+  <style>
+    :root { --accent: #0088cc; --bg: #f6f8fb; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      display:flex;
+      min-height:100vh;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .card {
+      width:100%;
+      max-width:520px;
+      background:#fff;
+      border-radius:12px;
+      padding:24px;
+      box-shadow: 0 8px 30px rgba(10,20,40,0.06);
+      text-align:center;
+    }
+    h1 { margin:0 0 10px; color:var(--accent); font-size:20px; }
+    p { color:#444; margin:0 0 18px; }
+    button {
+      background:var(--accent);
+      color:white;
+      border:0;
+      padding:12px 18px;
+      border-radius:8px;
+      font-size:16px;
+      cursor:pointer;
+    }
+    .note { margin-top:14px; color:#666; font-size:13px; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Welcome to My Telegram Web App, OK</h1>
-    <p>This web app is connected to my Telegram bot and displays Monetag ads.</p>
+  <div class="card">
+    <h1>Open Ad (then Google)</h1>
+    <p>Tap the button to view an ad. When you come back and tap again you’ll go to Google.</p>
 
-    <!-- ✅ Monetag Ad Code -->
-    <!-- Replace YOUR_MONETAG_CODE with the real code from your Monetag dashboard -->
-    <script async src="https://cdn.monetag.com/multitag.js"></script>
-    <div class="monetag-slot" data-channel="YOUR_MONETAG_CODE"></div>
+    <button id="mainBtn">Show Ad</button>
 
-    <button id="btnAction">Click Me!</button>
+    <div class="note" id="status">Status: ready</div>
   </div>
 
-  <!-- ✅ Telegram Web App SDK -->
+  <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Rewarded Interstitial AD -->
-  <script src='//libtl.com/sdk.js' data-zone='10168919' data-sdk='show_10168919'></script>
-  <script src="script.js"></script>
+  <script>
+    (function () {
+      // ---------- CONFIG ----------
+      // Replace AD_URL with your Monetag ad landing page or other ad URL
+      const AD_URL = "https://example.com/your-ad-landing"; // <-- REPLACE
+      const SECOND_CLICK_URL = "https://google.com";
+      // ----------------------------
+
+      const tg = window.Telegram?.WebApp;
+      const mainBtn = document.getElementById("mainBtn");
+      const statusEl = document.getElementById("status");
+
+      // localStorage key to remember if we opened the ad
+      const STORE_KEY = "opened_ad_once";
+
+      // helper to update status text
+      function setStatus(text) {
+        statusEl.textContent = "Status: " + text;
+      }
+
+      // initial UI setup
+      function initUI() {
+        // If the user already opened the ad (recorded), change button label
+        if (localStorage.getItem(STORE_KEY) === "1") {
+          mainBtn.textContent = "Go to Google";
+          setStatus("Returned from ad — click to open Google");
+        } else {
+          mainBtn.textContent = "Show Ad";
+          setStatus("Ready to show ad");
+        }
+
+        // If Telegram SDK exists, set MainButton (Telegram’s top button) to match
+        try {
+          if (tg) {
+            tg.MainButton.setText(mainBtn.textContent);
+            tg.MainButton.show();
+            // keep MainButton synced with page button text
+            // Also hide Telegram main button click handler that might conflict:
+            tg.MainButton.onClick(() => {
+              handleButtonClick();
+            });
+          }
+        } catch (err) {
+          // ignore if Telegram SDK not available (when opened in normal browser)
+          console.warn("Telegram SDK not available or error:", err);
+        }
+      }
+
+      // Open a URL in browser (Telegram recommended way)
+      function openUrl(url) {
+        try {
+          if (tg && typeof tg.openLink === "function") {
+            // opens link in external browser (or in-app browser depending on Telegram)
+            tg.openLink(url);
+          } else {
+            // fallback to window.open
+            window.open(url, "_blank", "noopener,noreferrer");
+          }
+        } catch (err) {
+          console.error("openUrl error:", err);
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
+      }
+
+      // Handle clicks
+      function handleButtonClick() {
+        const opened = localStorage.getItem(STORE_KEY) === "1";
+
+        if (!opened) {
+          // First click: open the ad URL
+          setStatus("Opening ad...");
+          // IMPORTANT: use your Monetag landing/campaign URL here
+          openUrl(AD_URL);
+
+          // record that we opened ad once
+          localStorage.setItem(STORE_KEY, "1");
+
+          // Update button to indicate next action (user will click again after returning)
+          mainBtn.textContent = "Return → Go to Google";
+          if (tg) tg.MainButton.setText(mainBtn.textContent);
+
+          // Wait for user to come back. visibilitychange event will update status.
+        } else {
+          // Second+ click: open Google (or SECOND_CLICK_URL)
+          setStatus("Opening Google...");
+          openUrl(SECOND_CLICK_URL);
+
+          // Optionally clear the flag so flow restarts next time
+          // localStorage.removeItem(STORE_KEY);
+        }
+      }
+
+      // When user returns to the page (visibilitychange), we update UI
+      function onVisibilityChange() {
+        if (document.visibilityState === "visible") {
+          // If we had opened ad, tell user they can click to go to google
+          if (localStorage.getItem(STORE_KEY) === "1") {
+            setStatus("You're back — click button to open Google");
+            mainBtn.textContent = "Go to Google";
+            if (tg) tg.MainButton.setText(mainBtn.textContent);
+          } else {
+            setStatus("Ready to show ad");
+            mainBtn.textContent = "Show Ad";
+            if (tg) tg.MainButton.setText(mainBtn.textContent);
+          }
+        } else {
+          // when page hidden (user left to ad page)
+          setStatus("You left the app (likely viewing the ad)");
+        }
+      }
+
+      // Attach handlers
+      mainBtn.addEventListener("click", handleButtonClick);
+      document.addEventListener("visibilitychange", onVisibilityChange);
+
+      // initialize
+      initUI();
+
+      // Also call visibility handler once to set correct state
+      onVisibilityChange();
+    })();
+
+    // Rewarded interstitial
+show_10168919().then(() => {
+    // You need to add your user reward function here, which will be executed after the user watches the ad.
+    // For more details, please refer to the detailed instructions.
+    alert('You have seen an ad!');
+})
+
+        
+
+
+// Rewarded Popup
+show_10168919('pop').then(() => {
+    // user watch ad till the end or close it in interstitial format
+    // your code to reward user for rewarded format
+}).catch(e => {
+    // user get error during playing ad
+    // do nothing or whatever you want
+})
+
+        
+
+
+
+// In-App Interstitial
+show_10168919({
+  type: 'inApp',
+  inAppSettings: {
+    frequency: 2,
+    capping: 0.1,
+    interval: 30,
+    timeout: 5,
+    everyPage: false
+  }
+})
+
+/*
+This value is decoded as follows:
+- show automatically 2 ads
+  within 0.1 hours (6 minutes)
+  with a 30-second interval between them
+  and a 5-second delay before the first one is shown.
+  The last digit, 0, means that the session will be saved when you navigate between pages.
+  If you set the last digit as 1, then at any transition between pages,
+  the session will be reset, and the ads will start again.
+*/
+  </script>
 </body>
 </html>
