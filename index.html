@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Telegram Web App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to My Telegram Web App</h1>
+    <p>This web app is connected to my Telegram bot and displays Monetag ads.</p>
+
+    <!-- ✅ Monetag Ad Code -->
+    <!-- Replace YOUR_MONETAG_CODE with the real code from your Monetag dashboard -->
+    <script async src="https://cdn.monetag.com/multitag.js"></script>
+    <div class="monetag-slot" data-channel="YOUR_MONETAG_CODE"></div>
+
+    <button id="btnAction">Click Me!</button>
+  </div>
+
+  <!-- ✅ Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
