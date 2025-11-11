@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ad → Google → Ad Loop</title>
+  <title> V1.0 </title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -46,6 +46,18 @@
       color: #666;
       font-size: 14px;
     }
+    .auto-info {
+      margin-top: 15px;
+      padding: 10px;
+      background: #f8f8f8;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #555;
+    }
+    .countdown {
+      font-weight: bold;
+      color: #0088cc;
+    }
   </style>
 </head>
 <body>
@@ -54,6 +66,9 @@
     <p>Click the button — watch ad, then go to Google.</p>
     <button id="actionBtn">Show Ad</button>
     <div id="status">Ready</div>
+    <div class="auto-info">
+      <p>Button will automatically click in <span id="countdown" class="countdown">5</span> seconds</p>
+    </div>
   </div>
 
   <!-- ✅ Monetag Rewarded Interstitial SDK -->
@@ -65,11 +80,14 @@
   <script>
     const btn = document.getElementById("actionBtn");
     const status = document.getElementById("status");
+    const countdownEl = document.getElementById("countdown");
     const GOOGLE_URL = "https://google.com";
     const tg = window.Telegram?.WebApp;
 
     // 0 = show ad next | 1 = open google next
     let nextAction = localStorage.getItem("nextAction") || "ad";
+    let autoClickTimer = null;
+    let countdownValue = 5;
 
     function updateUI() {
       if (nextAction === "ad") {
@@ -81,8 +99,36 @@
       }
     }
 
+    function startAutoClickTimer() {
+      // Clear any existing timer
+      if (autoClickTimer) {
+        clearInterval(autoClickTimer);
+      }
+      
+      // Reset countdown
+      countdownValue = 5;
+      countdownEl.textContent = countdownValue;
+      
+      // Start countdown
+      autoClickTimer = setInterval(() => {
+        countdownValue--;
+        countdownEl.textContent = countdownValue;
+        
+        if (countdownValue <= 0) {
+          clearInterval(autoClickTimer);
+          handleClick();
+        }
+      }, 1000);
+    }
+
     async function handleClick() {
       btn.disabled = true; // prevent multiple clicks
+      
+      // Clear any existing timer
+      if (autoClickTimer) {
+        clearInterval(autoClickTimer);
+        autoClickTimer = null;
+      }
 
       if (nextAction === "ad") {
         status.textContent = "Loading ad...";
@@ -98,6 +144,8 @@
         } finally {
           btn.disabled = false;
           updateUI();
+          // Restart auto-click timer after ad completes
+          startAutoClickTimer();
         }
 
       } else {
@@ -113,11 +161,16 @@
         localStorage.setItem("nextAction", "ad");
         btn.disabled = false;
         updateUI();
+        // Restart auto-click timer after Google opens
+        startAutoClickTimer();
       }
     }
 
     btn.addEventListener("click", handleClick);
     updateUI();
+    
+    // Start the auto-click timer when page loads
+    startAutoClickTimer();
   </script>
 </body>
 </html>
