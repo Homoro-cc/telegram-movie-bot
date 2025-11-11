@@ -5,35 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Auto Ad Loop</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f2f2f2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-  }
-  .box {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    text-align: center;
-    width: 320px;
-  }
+  body { font-family: Arial, sans-serif; background: #f2f2f2; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 320px; }
   h1 { color: #0088cc; font-size: 20px; }
-  button {
-    background: #0088cc;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 12px 18px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 15px;
-    width: 100%;
-  }
+  button { background: #0088cc; color: #fff; border: none; border-radius: 6px; padding: 12px 18px; font-size: 16px; cursor: pointer; margin-top: 15px; width: 100%; }
   button:disabled { opacity: 0.6; cursor: not-allowed; }
   #status { margin-top: 10px; color: #666; font-size: 14px; }
   .countdown { font-weight: bold; color: #0088cc; }
@@ -41,7 +16,7 @@
 </head>
 <body>
 <div class="box">
-  <h1>Auto Ad Loop [v1.3] </h1>
+  <h1>Auto Ad Loop</h1>
   <p>Button will show ad every 5 seconds automatically.</p>
   <button id="actionBtn">Show Ad</button>
   <div id="status">Ready</div>
@@ -61,13 +36,11 @@ const countdownEl = document.getElementById("countdown");
 let countdownValue = 5;
 let autoClickTimer = null;
 
-// Update button UI
 function updateUI() {
   btn.textContent = "Show Ad";
   status.textContent = "Next: Watch ad.";
 }
 
-// Start auto-click timer
 function startAutoClickTimer() {
   if (autoClickTimer) clearInterval(autoClickTimer);
   countdownValue = 5;
@@ -84,27 +57,52 @@ function startAutoClickTimer() {
   }, 1000);
 }
 
-// Handle ad click
+// Automatically click "Continue" or "Close" buttons on ad
+function autoClickAdButtons() {
+  const maxAttempts = 20; // try 20 times (~20s)
+  let attempts = 0;
+
+  const interval = setInterval(() => {
+    attempts++;
+    // Try to find Continue button (you may need to adjust the selector)
+    const continueBtn = document.querySelector(".monetag-continue, .monetag-btn-continue");
+    const closeBtn = document.querySelector(".monetag-close, .monetag-btn-close");
+
+    if (continueBtn) {
+      continueBtn.click();
+      clearInterval(interval);
+      status.textContent = "Ad finished (Continue clicked).";
+      startAutoClickTimer();
+    } else if (closeBtn) {
+      closeBtn.click();
+      clearInterval(interval);
+      status.textContent = "Ad finished (Close clicked).";
+      startAutoClickTimer();
+    } else if (attempts >= maxAttempts) {
+      clearInterval(interval);
+      status.textContent = "Ad finished (No button found).";
+      startAutoClickTimer();
+    }
+  }, 1000);
+}
+
 async function handleClick() {
   btn.disabled = true;
   status.textContent = "Loading ad...";
 
   try {
     await show_10168919(); // show ad
-    // automatically click "continue" if SDK allows it
-    // Monetag SDK automatically shows continue dialog, so we just wait
-    status.textContent = "Ad finished. Preparing next ad...";
+    status.textContent = "Ad playing... waiting to auto-click button.";
+    // Start auto-clicking Continue/Close buttons after ad starts
+    autoClickAdButtons();
   } catch (err) {
     console.error("Ad error:", err);
     status.textContent = "Ad failed. Retrying...";
-  } finally {
     btn.disabled = false;
-    updateUI();
-    startAutoClickTimer(); // restart timer for next ad
+    startAutoClickTimer();
   }
 }
 
-// Trigger ad if button is clicked manually
 btn.addEventListener("click", handleClick);
 updateUI();
 startAutoClickTimer();
