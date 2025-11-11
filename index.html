@@ -17,11 +17,11 @@
 <body>
 <div class="box">
   <h1>Auto Ad Loop</h1>
-  <p>Button will show ad every 5 seconds automatically.</p>
+  <p>Ads will play automatically every 5 seconds.</p>
   <button id="actionBtn">Show Ad</button>
   <div id="status">Ready</div>
   <div class="auto-info">
-    <p>Ad will auto-show in <span id="countdown" class="countdown">5</span> seconds</p>
+    <p>Next ad in <span id="countdown" class="countdown">5</span> seconds</p>
   </div>
 </div>
 
@@ -36,11 +36,13 @@ const countdownEl = document.getElementById("countdown");
 let countdownValue = 5;
 let autoClickTimer = null;
 
+// Update button text and status
 function updateUI() {
   btn.textContent = "Show Ad";
   status.textContent = "Next: Watch ad.";
 }
 
+// Start auto countdown and trigger ad when countdown ends
 function startAutoClickTimer() {
   if (autoClickTimer) clearInterval(autoClickTimer);
   countdownValue = 5;
@@ -57,53 +59,28 @@ function startAutoClickTimer() {
   }, 1000);
 }
 
-// Automatically click "Continue" or "Close" buttons on ad
-function autoClickAdButtons() {
-  const maxAttempts = 20; // try 20 times (~20s)
-  let attempts = 0;
-
-  const interval = setInterval(() => {
-    attempts++;
-    // Try to find Continue button (you may need to adjust the selector)
-    const continueBtn = document.querySelector(".monetag-continue, .monetag-btn-continue");
-    const closeBtn = document.querySelector(".monetag-close, .monetag-btn-close");
-
-    if (continueBtn) {
-      continueBtn.click();
-      clearInterval(interval);
-      status.textContent = "Ad finished (Continue clicked).";
-      startAutoClickTimer();
-    } else if (closeBtn) {
-      closeBtn.click();
-      clearInterval(interval);
-      status.textContent = "Ad finished (Close clicked).";
-      startAutoClickTimer();
-    } else if (attempts >= maxAttempts) {
-      clearInterval(interval);
-      status.textContent = "Ad finished (No button found).";
-      startAutoClickTimer();
-    }
-  }, 1000);
-}
-
+// Handle ad click using Monetag SDK
 async function handleClick() {
   btn.disabled = true;
   status.textContent = "Loading ad...";
 
   try {
-    await show_10168919(); // show ad
-    status.textContent = "Ad playing... waiting to auto-click button.";
-    // Start auto-clicking Continue/Close buttons after ad starts
-    autoClickAdButtons();
+    // show_10168919 returns a promise that resolves after ad finishes
+    await show_10168919();
+    status.textContent = "Ad finished. Preparing next ad...";
   } catch (err) {
     console.error("Ad error:", err);
     status.textContent = "Ad failed. Retrying...";
+  } finally {
     btn.disabled = false;
-    startAutoClickTimer();
+    updateUI();
+    startAutoClickTimer(); // automatically start next ad countdown
   }
 }
 
+// Allow manual click as well
 btn.addEventListener("click", handleClick);
+
 updateUI();
 startAutoClickTimer();
 </script>
