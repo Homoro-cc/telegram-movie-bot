@@ -3,25 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Auto Ad Loop</title>
+<title>Auto Ad Loop Dashboard</title>
 <style>
   body { font-family: Arial, sans-serif; background: #f2f2f2; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-  .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 320px; }
-  h1 { color: #0088cc; font-size: 20px; }
+  .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+  h1 { color: #0088cc; font-size: 20px; margin-bottom: 10px; }
   button { background: #0088cc; color: #fff; border: none; border-radius: 6px; padding: 12px 18px; font-size: 16px; cursor: pointer; margin-top: 15px; width: 100%; }
   button:disabled { opacity: 0.6; cursor: not-allowed; }
   #status { margin-top: 10px; color: #666; font-size: 14px; }
   .countdown { font-weight: bold; color: #0088cc; }
+  .dashboard { margin-top: 20px; background: #f8f8f8; padding: 10px; border-radius: 6px; text-align: left; font-size: 14px; color: #333; }
+  .dashboard div { margin-bottom: 6px; }
 </style>
 </head>
 <body>
 <div class="box">
-  <h1>Auto Ad Loop [v] </h1>
+  <h1>Auto Ad Loop Dashboard</h1>
   <p>Ads will play automatically every 5 seconds.</p>
   <button id="actionBtn">Show Ad</button>
   <div id="status">Ready</div>
   <div class="auto-info">
     <p>Next ad in <span id="countdown" class="countdown">5</span> seconds</p>
+  </div>
+  <div class="dashboard">
+    <div>Start Time: <span id="startTime">--:--:--</span></div>
+    <div>Running Time: <span id="runningTime">00:00:00</span></div>
+    <div>Ads Loaded: <span id="adsLoaded">0</span></div>
+    <div>Ads Completed: <span id="adsClicked">0</span></div>
   </div>
 </div>
 
@@ -33,16 +41,36 @@ const btn = document.getElementById("actionBtn");
 const status = document.getElementById("status");
 const countdownEl = document.getElementById("countdown");
 
+const adsLoadedEl = document.getElementById("adsLoaded");
+const adsClickedEl = document.getElementById("adsClicked");
+const startTimeEl = document.getElementById("startTime");
+const runningTimeEl = document.getElementById("runningTime");
+
 let countdownValue = 5;
 let autoClickTimer = null;
+let adsLoaded = 0;
+let adsClicked = 0;
 
-// Update button text and status
+const startTime = new Date();
+startTimeEl.textContent = startTime.toLocaleTimeString();
+
+// Update running time every second
+setInterval(() => {
+  const now = new Date();
+  const diff = new Date(now - startTime);
+  const hours = String(diff.getUTCHours()).padStart(2,'0');
+  const minutes = String(diff.getUTCMinutes()).padStart(2,'0');
+  const seconds = String(diff.getUTCSeconds()).padStart(2,'0');
+  runningTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+}, 1000);
+
 function updateUI() {
   btn.textContent = "Show Ad";
   status.textContent = "Next: Watch ad.";
+  adsLoadedEl.textContent = adsLoaded;
+  adsClickedEl.textContent = adsClicked;
 }
 
-// Start auto countdown and trigger ad when countdown ends
 function startAutoClickTimer() {
   if (autoClickTimer) clearInterval(autoClickTimer);
   countdownValue = 5;
@@ -59,14 +87,15 @@ function startAutoClickTimer() {
   }, 1000);
 }
 
-// Handle ad click using Monetag SDK
 async function handleClick() {
   btn.disabled = true;
+  adsLoaded++;
+  updateUI();
   status.textContent = "Loading ad...";
 
   try {
-    // show_10168919 returns a promise that resolves after ad finishes
-    await show_10168919();
+    await show_10168919(); // show ad
+    adsClicked++;
     status.textContent = "Ad finished. Preparing next ad...";
   } catch (err) {
     console.error("Ad error:", err);
@@ -74,13 +103,11 @@ async function handleClick() {
   } finally {
     btn.disabled = false;
     updateUI();
-    startAutoClickTimer(); // automatically start next ad countdown
+    startAutoClickTimer(); // auto next ad
   }
 }
 
-// Allow manual click as well
 btn.addEventListener("click", handleClick);
-
 updateUI();
 startAutoClickTimer();
 </script>
